@@ -1,20 +1,17 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# SparkPay Employee App
 
-# Run and deploy your AI Studio app
+The app staff use to see their pay. It talks only to the SparkPay backend.
 
-This contains everything you need to run your app locally.
+## Run locally
 
-View your app in AI Studio: https://ai.studio/apps/drive/17zr7LFM545_1chYmpUckOwODwgEhHmRu
+**Prerequisites:** Node.js 20 or later.
 
-## Run Locally
+1. Install dependencies: `npm install`
+2. Create `.env.local` with the backend URL, for example `API_URL=http://localhost:5000`
+3. Start the app: `npm run dev`
 
-**Prerequisites:**  Node.js
+## Commands
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- `npm run dev`: start the dev server on port 3000
+- `npm run build`: production build
+- `npm test`: run the tests (Vitest)

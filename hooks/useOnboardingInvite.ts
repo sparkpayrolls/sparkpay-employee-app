@@ -4,15 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import * as yup from "yup";
 import useStore, { User } from "@/store";
-
-interface OnboardingData {
-  email: string;
-  firstname: string;
-  lastname: string;
-  company: {
-    name: string;
-  };
-}
+import { getInvite, inviteCountry } from "@/services/invite";
 
 interface OnboardingResponse {
   accessToken: string;
@@ -44,6 +36,7 @@ export const useAcceptInvite = () => {
   const onboardingToken = searchParams.get("token");
 
   const [orgName, setOrgName] = useState("");
+  const [countryId, setCountryId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +55,7 @@ export const useAcceptInvite = () => {
     $api
       .post<OnboardingResponse>("auth/signup", {
         ...values,
-        country: "6151053e38bc69b9207a53d5",
+        country: countryId,
         inviteCode: onboardingToken,
       })
       .then(({ data }) => {
@@ -75,7 +68,7 @@ export const useAcceptInvite = () => {
           "employees/join",
           {
             token: onboardingToken,
-            country: "6151053e38bc69b9207a53d5",
+            country: countryId,
           },
           {
             headers: {
@@ -112,9 +105,8 @@ export const useAcceptInvite = () => {
 
   useEffect(() => {
     if (onboardingToken) {
-      $api
-        .get<OnboardingData>(`employees/onboard/${onboardingToken}`)
-        .then(({ data }) => {
+      getInvite(onboardingToken)
+        .then((data) => {
           form.setValues({
             email: data.email,
             password: "",
@@ -122,6 +114,7 @@ export const useAcceptInvite = () => {
             lastname: data.lastname,
           });
           setOrgName(data.company.name);
+          setCountryId(inviteCountry(data));
           setIsLoading(false);
         })
         .catch((err) => {

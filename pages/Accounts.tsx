@@ -1,9 +1,8 @@
 import React from "react";
-import { AccountItem } from "../components/accounts/AccountItem";
 import { useAccounts } from "../hooks/useAccounts";
 
 const Accounts: React.FC = () => {
-  const { accounts, handleSetDefault, handleBack } = useAccounts();
+  const { handleBack } = useAccounts();
 
   return (
     <>
@@ -21,7 +20,8 @@ const Accounts: React.FC = () => {
       </header>
       <main className="p-4 space-y-8">
         {/* The add-account form comes back with the safe bank change flow
-            (M01-06): employer approval and a 24-hour cooling-off. */}
+            (M01-06): employer approval and a 24-hour cooling-off. The old
+            "My Accounts" list was mock data (removed in P0-07). */}
         <section className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg space-y-2">
           <h2 className="text-lg font-bold">Change your salary account</h2>
           <p className="text-subtext-light dark:text-subtext-dark">
@@ -29,18 +29,6 @@ const Accounts: React.FC = () => {
             contact your HR or payroll admin. You'll be able to request this
             in the app soon.
           </p>
-        </section>
-        <section className="space-y-4">
-          <h2 className="text-lg font-bold">My Accounts</h2>
-          <div className="space-y-3">
-            {accounts.map((acc) => (
-              <AccountItem
-                key={acc.id}
-                account={acc}
-                onToggle={handleSetDefault}
-              />
-            ))}
-          </div>
         </section>
       </main>
     </>

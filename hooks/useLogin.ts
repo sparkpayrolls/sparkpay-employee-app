@@ -1,4 +1,5 @@
 import { $api } from "@/services/api";
+import { getInvite, inviteCountry } from "@/services/invite";
 import useStore, { User } from "@/store";
 import { FormikHelpers, useFormik } from "formik";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
@@ -54,11 +55,17 @@ export const useLogin = () => {
       setUser(response.data.user);
 
       if (onboardingToken) {
+        // The employee's (or employer's) country. After sign-up the link is
+        // used up and the lookup fails, so fall back to the account's.
+        const country =
+          (await getInvite(onboardingToken)
+            .then(inviteCountry)
+            .catch(() => "")) || response.data.user.country?.id;
         await $api.post(
           "employees/join",
           {
             token: onboardingToken,
-            country: "6151053e38bc69b9207a53d5",
+            country,
           },
           {
             headers: {
