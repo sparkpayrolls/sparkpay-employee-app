@@ -63,3 +63,24 @@ describe("resolveInviteCountry", () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain("countries?all=true");
   });
 });
+
+describe("fallbackCountry against production data", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("finds Nigeria by name when the record has no iso2 (production today)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string) => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [{ id: "6151053e38bc69b9207a53d5", name: "Nigeria" }],
+        }),
+      }))
+    );
+
+    await expect(
+      resolveInviteCountry(invite({ company: { name: "Brightway Ltd" } }))
+    ).resolves.toBe("6151053e38bc69b9207a53d5");
+  });
+});

@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import * as yup from "yup";
 import useStore, { User } from "@/store";
-import { getInvite, resolveInviteCountry } from "@/services/invite";
+import {
+  fallbackCountry,
+  getInvite,
+  resolveInviteCountry,
+} from "@/services/invite";
 
 interface OnboardingResponse {
   accessToken: string;
@@ -37,6 +41,7 @@ export const useAcceptInvite = () => {
 
   const [orgName, setOrgName] = useState("");
   const [countryId, setCountryId] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,15 +52,27 @@ export const useAcceptInvite = () => {
     lastname: "",
   };
 
-  const handleFormikSubmit = (
+  const handleFormikSubmit = async (
     values: typeof initialValues,
     helpers: FormikHelpers<typeof initialValues>
   ) => {
     helpers.setSubmitting(true);
+    setFormError(null);
+    // never sign up with an empty country: the backend rejects it, and the
+    // person would be told to sign in to an account that was never created
+    const country =
+      countryId || (await fallbackCountry().catch(() => ""));
+    if (!country) {
+      setFormError(
+        "We couldn't load your invite details. Check your connection and try again."
+      );
+      helpers.setSubmitting(false);
+      return;
+    }
     $api
       .post<OnboardingResponse>("auth/signup", {
         ...values,
-        country: countryId,
+        country,
         inviteCode: onboardingToken,
       })
       .then(({ data }) => {
@@ -68,7 +85,7 @@ export const useAcceptInvite = () => {
           "employees/join",
           {
             token: onboardingToken,
-            country: countryId,
+            country,
           },
           {
             headers: {
@@ -137,6 +154,7 @@ export const useAcceptInvite = () => {
     orgName,
     isLoading,
     error,
+    formError,
     form,
     handleSignInRedirect,
   };

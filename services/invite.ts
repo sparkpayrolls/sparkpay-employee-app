@@ -14,7 +14,8 @@ export interface Invite {
 
 interface Country {
   id: string;
-  iso2: string;
+  name?: string;
+  iso2?: string;
 }
 
 export const getInvite = async (token: string): Promise<Invite> => {
@@ -32,13 +33,18 @@ export const inviteCountry = (invite: Invite): string =>
 /**
  * Nigeria, looked up rather than hard-coded. Only for when neither country
  * is known, for example a backend older than the employer-country lookup:
- * every invite used Nigeria before.
+ * every invite used Nigeria before. Matched by name as well as code:
+ * production's Nigeria record predates the iso2 field and has none.
  */
 export const fallbackCountry = async (): Promise<string> => {
   const { data } = await $api.get<Country[]>("countries", {
     params: { all: "true" },
   });
-  return data.find((country) => country.iso2 === "NG")?.id ?? "";
+  return (
+    data.find(
+      (country) => country.iso2 === "NG" || country.name === "Nigeria"
+    )?.id ?? ""
+  );
 };
 
 export const resolveInviteCountry = async (invite: Invite): Promise<string> =>

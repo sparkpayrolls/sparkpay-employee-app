@@ -6,7 +6,7 @@ import { Input } from "../components/Input";
 import { Button } from "../components/Button";
 
 const AcceptInvite: React.FC = () => {
-  const { orgName, isLoading, error, form, handleSignInRedirect } =
+  const { orgName, isLoading, error, formError, form, handleSignInRedirect } =
     useAcceptInvite();
 
   if (isLoading) {
@@ -90,6 +90,11 @@ const AcceptInvite: React.FC = () => {
           >
             Create Account & Join
           </Button>
+          {formError && (
+            <p role="alert" className="text-center text-sm text-red-500">
+              {formError}
+            </p>
+          )}
         </form>
 
         <p className="mt-8 text-center text-sm text-subtext-light dark:text-subtext-dark">
