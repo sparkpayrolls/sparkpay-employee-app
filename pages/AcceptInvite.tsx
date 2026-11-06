@@ -6,8 +6,15 @@ import { Input } from "../components/Input";
 import { Button } from "../components/Button";
 
 const AcceptInvite: React.FC = () => {
-  const { orgName, isLoading, error, formError, form, handleSignInRedirect } =
-    useAcceptInvite();
+  const {
+    orgName,
+    isLoading,
+    error,
+    formError,
+    form,
+    canSignInToJoin,
+    handleSignInRedirect,
+  } = useAcceptInvite();
 
   if (isLoading) {
     return (
@@ -23,16 +30,18 @@ const AcceptInvite: React.FC = () => {
     return (
       <div className="flex min-h-screen flex-col justify-center items-center gap-4 bg-background-light p-6 text-center dark:bg-background-dark">
         <p className="text-red-500">{error}</p>
-        <p className="text-subtext-light dark:text-subtext-dark">
-          Already created your account?{" "}
-          <button
-            type="button"
-            className="font-semibold text-primary underline"
-            onClick={handleSignInRedirect}
-          >
-            Sign in to finish joining
-          </button>
-        </p>
+        {canSignInToJoin && (
+          <p className="text-subtext-light dark:text-subtext-dark">
+            Already created your account?{" "}
+            <button
+              type="button"
+              className="font-semibold text-primary underline"
+              onClick={handleSignInRedirect}
+            >
+              Sign in to finish joining
+            </button>
+          </p>
+        )}
       </div>
     );
   }

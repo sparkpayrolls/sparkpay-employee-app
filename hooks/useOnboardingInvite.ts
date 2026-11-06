@@ -145,8 +145,16 @@ export const useAcceptInvite = () => {
   }, [onboardingToken, form.setValues]);
 
   const handleSignInRedirect = () => {
-    navigate(`/login?onboarding_token=${onboardingToken}`, {
-      state: { message: `Please sign in to join ${orgName}.` },
+    if (!onboardingToken) {
+      navigate("/login");
+      return;
+    }
+    navigate(`/login?onboarding_token=${encodeURIComponent(onboardingToken)}`, {
+      state: {
+        message: orgName
+          ? `Please sign in to join ${orgName}.`
+          : "Please sign in to finish joining.",
+      },
     });
   };
 
@@ -156,6 +164,7 @@ export const useAcceptInvite = () => {
     error,
     formError,
     form,
+    canSignInToJoin: !!onboardingToken,
     handleSignInRedirect,
   };
 };

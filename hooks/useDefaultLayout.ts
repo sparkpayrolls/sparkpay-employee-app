@@ -11,7 +11,6 @@ export const useDefaultLayout = () => {
       .get<User>("users/me")
       .then(({ data }) => {
         setUser(data);
-        $api.setUser = setUser;
       })
       .catch((err) => console.error(err))
       .finally(() => setIsLoading(false));

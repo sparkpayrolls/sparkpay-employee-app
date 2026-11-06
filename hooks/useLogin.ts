@@ -16,6 +16,9 @@ interface LoginResponse {
   user: User;
 }
 
+export const JOIN_FAILED_NOTICE =
+  "You're signed in, but this invite link no longer works. If you can't see your company, ask your HR or payroll admin to send a new invite.";
+
 const loginSchema = yup.object().shape({
   email: yup
     .string()
@@ -31,7 +34,12 @@ export const useLogin = () => {
   const message = location.state?.message;
   const [searchParams] = useSearchParams();
 
-  const onboardingToken = searchParams.get("onboarding_token");
+  // "null" and "undefined" come from links built without a token
+  const rawToken = searchParams.get("onboarding_token");
+  const onboardingToken =
+    rawToken && rawToken !== "null" && rawToken !== "undefined"
+      ? rawToken
+      : null;
 
   const initialValues: LoginFormValues = {
     email: "",
@@ -43,24 +51,30 @@ export const useLogin = () => {
     helpers: FormikHelpers<LoginFormValues>
   ) => {
     helpers.setSubmitting(true);
+    let session: LoginResponse;
     try {
-      const response = await $api.post<LoginResponse>("auth/login", {
+      ({ data: session } = await $api.post<LoginResponse>("auth/login", {
         username: values.email,
         password: values.password,
-      });
+      }));
+    } catch {
+      helpers.setFieldError("email", "Invalid email or password");
+      helpers.setSubmitting(false);
+      return;
+    }
 
-      localStorage.setItem("accessToken", response.data.accessToken);
-      localStorage.setItem("refreshToken", response.data.refreshToken);
+    localStorage.setItem("accessToken", session.accessToken);
+    localStorage.setItem("refreshToken", session.refreshToken);
+    setUser(session.user);
 
-      setUser(response.data.user);
-
-      if (onboardingToken) {
+    if (onboardingToken) {
+      try {
         // The employee's (or employer's) country. After sign-up the link is
         // used up and the lookup fails, so fall back to the account's.
         const country =
           (await getInvite(onboardingToken)
             .then(resolveInviteCountry)
-            .catch(() => "")) || response.data.user.country?.id;
+            .catch(() => "")) || session.user.country?.id;
         await $api.post(
           "employees/join",
           {
@@ -69,19 +83,21 @@ export const useLogin = () => {
           },
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+              Authorization: `Bearer ${session.accessToken}`,
             },
           }
         );
+      } catch {
+        // The sign-in worked; only the link did not (used, expired, or the
+        // person had already joined). Never report that as a wrong password.
+        helpers.setSubmitting(false);
+        navigate("/app/dashboard", { state: { notice: JOIN_FAILED_NOTICE } });
+        return;
       }
-
-      // Navigate to dashboard on success
-      navigate("/app/dashboard");
-    } catch (error) {
-      helpers.setFieldError("email", "Invalid email or password");
-    } finally {
-      helpers.setSubmitting(false);
     }
+
+    helpers.setSubmitting(false);
+    navigate("/app/dashboard");
   };
 
   const form = useFormik({

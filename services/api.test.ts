@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import useStore from "@/store";
 import { $api, ApiError } from "./api";
+import { clearSession } from "./session";
 
 type Reply = { status: number; body?: unknown };
 
@@ -148,5 +149,82 @@ describe("$api token refresh", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem("refreshToken")).toBe("old-refresh");
+  });
+});
+
+describe("$api refresh racing a log-out or another sign-in", () => {
+  const newPair = {
+    status: 200,
+    body: { data: { accessToken: "A-new-access", refreshToken: "A-new-refresh" } },
+  };
+
+  // users/me answers 401, then 200 to the retry; the refresh waits until
+  // the test releases it
+  const slowRefresh = () => {
+    let release: () => void = () => undefined;
+    let markStarted: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const started = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+    let usersMeCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("auth/tokens")) {
+          markStarted();
+          await gate;
+          return reply(newPair);
+        }
+        usersMeCalls += 1;
+        return usersMeCalls === 1
+          ? reply({ status: 401 })
+          : reply({ status: 200, body: { data: { id: "u-1" } } });
+      })
+    );
+    return { started, release: () => release() };
+  };
+
+  beforeEach(() => {
+    localStorage.setItem("accessToken", "A-access");
+    localStorage.setItem("refreshToken", "A-refresh");
+    useStore.setState({ user: signedInUser });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  });
+
+  it("does not bring a logged-out session back when its refresh lands late", async () => {
+    const refresh = slowRefresh();
+    const request = $api.get("users/me").catch((error) => error);
+
+    await refresh.started;
+    clearSession(); // the person taps Log out while the refresh is in flight
+    refresh.release();
+    await request;
+
+    expect(localStorage.getItem("accessToken")).toBeNull();
+    expect(localStorage.getItem("refreshToken")).toBeNull();
+  });
+
+  it("does not overwrite or log out the next person who signed in meanwhile", async () => {
+    const refresh = slowRefresh();
+    const request = $api.get("users/me").catch((error) => error);
+
+    await refresh.started;
+    clearSession();
+    localStorage.setItem("accessToken", "B-access");
+    localStorage.setItem("refreshToken", "B-refresh");
+    useStore.setState({ user: { ...signedInUser, id: "u-2" } });
+    refresh.release();
+    await request;
+
+    expect(localStorage.getItem("accessToken")).toBe("B-access");
+    expect(localStorage.getItem("refreshToken")).toBe("B-refresh");
+    expect(useStore.getState().user?.id).toBe("u-2");
   });
 });

@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Invite, inviteCountry, resolveInviteCountry } from "./invite";
+import {
+  getInvite,
+  Invite,
+  inviteCountry,
+  resolveInviteCountry,
+} from "./invite";
 
 const invite = (overrides: Partial<Invite> = {}): Invite => ({
   email: "amaka@mail.com",
@@ -82,5 +87,26 @@ describe("fallbackCountry against production data", () => {
     await expect(
       resolveInviteCountry(invite({ company: { name: "Brightway Ltd" } }))
     ).resolves.toBe("6151053e38bc69b9207a53d5");
+  });
+});
+
+describe("getInvite", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("keeps a crafted token inside the invite path instead of reaching other endpoints", async () => {
+    const fetchMock = vi.fn(async (_url: string) => ({
+      ok: false,
+      status: 400,
+      json: async () => ({ message: "invalid onboarding code" }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getInvite("../../users/me?x=1").catch(() => undefined);
+
+    const url = String(fetchMock.mock.calls[0][0]);
+    expect(url).toContain("employees/onboard/..%2F..%2Fusers%2Fme%3Fx%3D1");
+    expect(new URL(url, "http://api.test").pathname).toMatch(
+      /^\/(.*\/)?employees\/onboard\/[^/]+$/
+    );
   });
 });

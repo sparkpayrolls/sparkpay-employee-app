@@ -19,7 +19,11 @@ interface Country {
 }
 
 export const getInvite = async (token: string): Promise<Invite> => {
-  const { data } = await $api.get<Invite>(`employees/onboard/${token}`);
+  // encoded: the token comes from a link, and an unencoded "../" would send
+  // this signed-in request to another endpoint
+  const { data } = await $api.get<Invite>(
+    `employees/onboard/${encodeURIComponent(token)}`
+  );
   return data;
 };
 

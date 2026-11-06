@@ -1,7 +1,6 @@
 /**
  * This file provides functions to connect to backend APIs.
  */
-import { User } from "@/store";
 import { clearSession } from "./session";
 
 type ApiResponse<T> = {
@@ -48,16 +47,12 @@ export class $api {
     return url;
   }
 
-  static setUser: ((user: User | null) => unknown) | null = null;
-
   private static handleResponse<T>(
     response: Response
   ): Promise<ApiResponse<T>> {
     if (!response.ok) {
-      if (response.status === 401) {
-        $api.setUser?.(null);
-      }
-
+      // a 401 no longer resets the user here: handleRequest logs out through
+      // clearSession, and only if the request belongs to the current session
       return response
         .json()
         .then((data) => {
@@ -75,8 +70,12 @@ export class $api {
     return response.json().then(({ data, meta }) => ({ data, meta }));
   }
 
-  // One refresh shared by every request that gets a 401 at the same time
-  private static refreshing: Promise<boolean> | null = null;
+  // One refresh per session, shared by every request that gets a 401 at
+  // the same time
+  private static refreshing: {
+    refreshToken: string;
+    result: Promise<boolean>;
+  } | null = null;
 
   /** Swaps the refresh token for new tokens. Resolves false if it cannot. */
   private static refreshTokens(): Promise<boolean> {
@@ -84,28 +83,39 @@ export class $api {
     if (!refreshToken) {
       return Promise.resolve(false);
     }
+    if ($api.refreshing?.refreshToken === refreshToken) {
+      return $api.refreshing.result;
+    }
 
-    $api.refreshing =
-      $api.refreshing ||
-      fetch($api.getUrl("auth/tokens", { params: { refreshToken } }))
-        .then(async (response) => {
-          if (!response.ok) {
-            return false;
-          }
-          const { data } = await response.json();
-          if (!data?.accessToken || !data?.refreshToken) {
-            return false;
-          }
-          localStorage.setItem("accessToken", data.accessToken);
-          localStorage.setItem("refreshToken", data.refreshToken);
-          return true;
-        })
-        .catch(() => false)
-        .finally(() => {
+    const result = fetch(
+      $api.getUrl("auth/tokens", { params: { refreshToken } })
+    )
+      .then(async (response) => {
+        if (!response.ok) {
+          return false;
+        }
+        const { data } = await response.json();
+        if (!data?.accessToken || !data?.refreshToken) {
+          return false;
+        }
+        // Logged out, or someone else signed in, while this was in flight:
+        // never write this session's tokens over that
+        if (localStorage.getItem("refreshToken") !== refreshToken) {
+          return false;
+        }
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("refreshToken", data.refreshToken);
+        return true;
+      })
+      .catch(() => false)
+      .finally(() => {
+        if ($api.refreshing?.result === result) {
           $api.refreshing = null;
-        });
+        }
+      });
+    $api.refreshing = { refreshToken, result };
 
-    return $api.refreshing;
+    return result;
   }
 
   private static async handleRequest<T>(
@@ -115,6 +125,9 @@ export class $api {
     config?: HTTPConfig,
     isRetry = false
   ): Promise<ApiResponse<T>> {
+    // the session this request belongs to: a late 401 from an earlier
+    // session must not log out whoever is signed in now
+    const session = localStorage.getItem("refreshToken");
     const response = await fetch(url, {
       method,
       headers: {
@@ -129,13 +142,13 @@ export class $api {
     // sign-up and refresh themselves, or calls that bring their own token.
     const usesStoredToken =
       !config?.headers?.Authorization && !url.includes("/auth/");
-    if (response.status === 401 && usesStoredToken && !isRetry) {
-      if (await $api.refreshTokens()) {
+    if (response.status === 401 && usesStoredToken) {
+      if (!isRetry && (await $api.refreshTokens())) {
         return $api.handleRequest<T>(url, method, data, config, true);
       }
-      clearSession();
-    } else if (response.status === 401 && usesStoredToken) {
-      clearSession();
+      if (localStorage.getItem("refreshToken") === session) {
+        clearSession();
+      }
     }
 
     return $api.handleResponse<T>(response);
