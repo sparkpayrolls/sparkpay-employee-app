@@ -35,7 +35,10 @@ type HTTPConfig = {
 };
 
 export class $api {
-  private static readonly baseUrl = process.env.API_URL;
+  // VITE_API_URL is the standard Vite variable; API_URL (through the define
+  // in vite.config.ts) keeps current deployments working until it is set.
+  private static readonly baseUrl =
+    import.meta.env.VITE_API_URL || process.env.API_URL;
 
   private static getUrl(endpoint: string, config?: HTTPConfig): string {
     let url = `${this.baseUrl}/${endpoint}`;

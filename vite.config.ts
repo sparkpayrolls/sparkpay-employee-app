@@ -12,7 +12,8 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     // Public values only: anything defined here ships in the client bundle.
-    // API_URL moves to VITE_API_URL in P0-08.
+    // API_URL keeps existing deployments working; once VITE_API_URL is set
+    // in Vercel, remove this define.
     define: {
       "process.env.API_URL": JSON.stringify(env.API_URL),
     },

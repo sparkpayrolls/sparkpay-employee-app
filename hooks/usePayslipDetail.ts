@@ -99,14 +99,18 @@ export const usePayslipDetail = () => {
     fetchPayslip();
   }, [payslipId]);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const element = printableRef.current;
-    if (!element || typeof (window as any).html2pdf === "undefined") {
+    if (!element || !payslip) return;
+
+    // bundled and loaded on first use, instead of a CDN script on every page
+    let html2pdf: (typeof import("html2pdf.js"))["default"];
+    try {
+      html2pdf = (await import("html2pdf.js")).default;
+    } catch {
       alert("Could not generate PDF. Please try again later.");
       return;
     }
-
-    if (!payslip) return;
 
     const options = {
       margin: 0,
@@ -116,7 +120,7 @@ export const usePayslipDetail = () => {
       jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
     };
 
-    (window as any).html2pdf().set(options).from(element).save();
+    html2pdf().set(options).from(element).save();
   };
 
   const handleShare = () => {

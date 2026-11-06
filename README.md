@@ -7,7 +7,7 @@ The app staff use to see their pay. It talks only to the SparkPay backend.
 **Prerequisites:** Node.js 20 or later.
 
 1. Install dependencies: `npm install`
-2. Create `.env.local` with the backend URL, for example `API_URL=http://localhost:5000`
+2. Copy `.env.example` to `.env.local` and set `VITE_API_URL` to the backend URL, for example `http://localhost:5000`
 3. Start the app: `npm run dev`
 
 ## Commands

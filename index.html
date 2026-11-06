@@ -8,82 +8,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script>
-    tailwind.config = {
-        darkMode: 'class',
-        theme: {
-            extend: {
-                colors: {
-                    primary: '#0D39B6',
-                    'accent-blue': '#3B82F6',
-                    'background-light': '#F6F6F8',
-                    'background-dark': '#101522',
-                    'surface-light': '#FFFFFF',
-                    'surface-dark': '#1A2033',
-                    'text-light': '#111318',
-                    'text-dark': '#E3E4E6',
-                    'subtext-light': '#616C89',
-                    'subtext-dark': '#A0A7B9',
-                    'border-light': '#E3E4E6',
-                    'border-dark': '#2E3447',
-                    'success-light': '#16A34A',
-                    'success-dark': '#4ADE80',
-                },
-                fontFamily: {
-                    display: ['Inter', 'sans-serif'],
-                },
-                borderRadius: {
-                    DEFAULT: '0.5rem',
-                    lg: '0.75rem',
-                    xl: '1rem',
-                    full: '9999px',
-                },
-            },
-        },
-    };
-    </script>
-    <style>
-        body {
-            min-height: 100vh;
-            min-height: 100dvh;
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border-width: 0;
-        }
-        .interactive-scale {
-            transition: transform 0.1s ease-out;
-        }
-        .interactive-scale:active {
-            transform: scale(0.97);
-        }
-    </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.3"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark">
     <div id="root"></div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>
