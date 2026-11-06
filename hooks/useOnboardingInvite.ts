@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import * as yup from "yup";
 import useStore, { User } from "@/store";
-import { getInvite, inviteCountry } from "@/services/invite";
+import { getInvite, resolveInviteCountry } from "@/services/invite";
 
 interface OnboardingResponse {
   accessToken: string;
@@ -106,7 +106,7 @@ export const useAcceptInvite = () => {
   useEffect(() => {
     if (onboardingToken) {
       getInvite(onboardingToken)
-        .then((data) => {
+        .then(async (data) => {
           form.setValues({
             email: data.email,
             password: "",
@@ -114,7 +114,7 @@ export const useAcceptInvite = () => {
             lastname: data.lastname,
           });
           setOrgName(data.company.name);
-          setCountryId(inviteCountry(data));
+          setCountryId(await resolveInviteCountry(data).catch(() => ""));
           setIsLoading(false);
         })
         .catch((err) => {

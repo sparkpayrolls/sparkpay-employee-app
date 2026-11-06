@@ -1,5 +1,5 @@
 import { $api } from "@/services/api";
-import { getInvite, inviteCountry } from "@/services/invite";
+import { getInvite, resolveInviteCountry } from "@/services/invite";
 import useStore, { User } from "@/store";
 import { FormikHelpers, useFormik } from "formik";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
@@ -59,7 +59,7 @@ export const useLogin = () => {
         // used up and the lookup fails, so fall back to the account's.
         const country =
           (await getInvite(onboardingToken)
-            .then(inviteCountry)
+            .then(resolveInviteCountry)
             .catch(() => "")) || response.data.user.country?.id;
         await $api.post(
           "employees/join",
