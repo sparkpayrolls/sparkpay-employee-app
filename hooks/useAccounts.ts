@@ -4,8 +4,6 @@ import { FormikHelpers, useFormik } from "formik";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as yup from "yup";
-import type { Account } from "@/types";
-import { getFirestoreData } from "@/services/api";
 
 // Off until the safe bank change flow (M01-06). The backend already rejects
 // bank changes from employees (PUT /users/me returns 400).
@@ -35,7 +33,6 @@ export const useAccounts = () => {
   const user = useStore((state) => state.user);
   const setUser = useStore((state) => state.setUser);
   const [isResolvingAccount, setIsResolvingAccount] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [hasInitialized, setHasInitialized] = useState(false);
 
   const initialValues: AccountsFormValues = {
@@ -204,26 +201,6 @@ export const useAccounts = () => {
   // Check if form is valid and account name is resolved
   const isFormValid = form.isValid && form.values.accountName !== "";
 
-  // Fetch accounts on mount
-  useEffect(() => {
-    const fetchAccounts = async () => {
-      const accountsData = await getFirestoreData<Account>("accounts");
-      setAccounts(accountsData);
-    };
-
-    fetchAccounts();
-  }, []);
-
-  // Handler for setting default account
-  const handleSetDefault = (id: string) => {
-    setAccounts(
-      accounts.map((acc) => ({
-        ...acc,
-        isDefault: acc.id === id,
-      }))
-    );
-  };
-
   // Handler for back navigation
   const handleBack = () => {
     navigate(-1);
@@ -252,10 +229,8 @@ export const useAccounts = () => {
 
   return {
     form,
-    accounts,
     isResolvingAccount,
     isFormValid,
-    handleSetDefault,
     handleBack,
     handleBankChange,
     getAccountNumberHelperText,
