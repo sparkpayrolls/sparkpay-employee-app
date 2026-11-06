@@ -87,9 +87,8 @@ export class $api {
       return $api.refreshing.result;
     }
 
-    const result = fetch(
-      $api.getUrl("auth/tokens", { params: { refreshToken } })
-    )
+    const result = $api
+      .requestRefresh(refreshToken)
       .then(async (response) => {
         if (!response.ok) {
           return false;
@@ -116,6 +115,22 @@ export class $api {
     $api.refreshing = { refreshToken, result };
 
     return result;
+  }
+
+  /**
+   * POST /auth/tokens with the token in the body, so it stays out of URLs
+   * and logs. Backends from before that route only have the GET (404).
+   */
+  private static async requestRefresh(refreshToken: string) {
+    const response = await fetch($api.getUrl("auth/tokens"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (response.status !== 404) {
+      return response;
+    }
+    return fetch($api.getUrl("auth/tokens", { params: { refreshToken } }));
   }
 
   private static async handleRequest<T>(

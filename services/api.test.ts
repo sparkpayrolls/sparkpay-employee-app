@@ -13,7 +13,7 @@ const reply = ({ status, body = {} }: Reply) => ({
 
 /** fetch mock answering by URL: each route gets its replies in order */
 const mockFetch = (routes: Record<string, Reply[]>) => {
-  const fetchMock = vi.fn(async (url: string) => {
+  const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
     const route = Object.keys(routes).find((path) => url.includes(path));
     const next = route ? routes[route].shift() : undefined;
     if (!next) {
@@ -66,11 +66,43 @@ describe("$api token refresh", () => {
 
     expect(data.id).toBe("u-1");
     expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(String(fetchMock.mock.calls[1][0])).toContain(
-      "auth/tokens?refreshToken=old-refresh"
-    );
+    // the refresh token goes in the body, never in the URL
+    const [refreshUrl, refreshInit] = fetchMock.mock.calls[1] as [
+      string,
+      RequestInit,
+    ];
+    expect(refreshUrl).not.toContain("refreshToken");
+    expect(refreshInit.method).toBe("POST");
+    expect(JSON.parse(String(refreshInit.body))).toEqual({
+      refreshToken: "old-refresh",
+    });
     expect(authHeader(fetchMock.mock.calls[2])).toBe("Bearer new-access");
     expect(localStorage.getItem("refreshToken")).toBe("new-refresh");
+  });
+
+  it("falls back to the older GET refresh on a backend without POST /auth/tokens", async () => {
+    const fetchMock = mockFetch({
+      "users/me": [
+        { status: 401 },
+        { status: 200, body: { data: { id: "u-1" } } },
+      ],
+      "auth/tokens": [
+        { status: 404 },
+        {
+          status: 200,
+          body: { data: { accessToken: "new-access", refreshToken: "new-refresh" } },
+        },
+      ],
+    });
+
+    await $api.get("users/me");
+
+    const refreshCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).includes("auth/tokens")
+    );
+    expect(refreshCalls).toHaveLength(2);
+    expect(String(refreshCalls[1][0])).toContain("refreshToken=old-refresh");
+    expect(localStorage.getItem("accessToken")).toBe("new-access");
   });
 
   it("logs out when the refresh fails", async () => {
