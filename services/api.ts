@@ -70,13 +70,47 @@ export class $api {
     return response.json().then(({ data, meta }) => ({ data, meta }));
   }
 
-  private static handleRequest<T>(
+  // One refresh shared by every request that gets a 401 at the same time
+  private static refreshing: Promise<boolean> | null = null;
+
+  /** Swaps the refresh token for new tokens. Resolves false if it cannot. */
+  private static refreshTokens(): Promise<boolean> {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) {
+      return Promise.resolve(false);
+    }
+
+    $api.refreshing =
+      $api.refreshing ||
+      fetch($api.getUrl("auth/tokens", { params: { refreshToken } }))
+        .then(async (response) => {
+          if (!response.ok) {
+            return false;
+          }
+          const { data } = await response.json();
+          if (!data?.accessToken || !data?.refreshToken) {
+            return false;
+          }
+          localStorage.setItem("accessToken", data.accessToken);
+          localStorage.setItem("refreshToken", data.refreshToken);
+          return true;
+        })
+        .catch(() => false)
+        .finally(() => {
+          $api.refreshing = null;
+        });
+
+    return $api.refreshing;
+  }
+
+  private static async handleRequest<T>(
     url: string,
     method: string,
     data?: unknown,
-    config?: HTTPConfig
+    config?: HTTPConfig,
+    isRetry = false
   ): Promise<ApiResponse<T>> {
-    return fetch(url, {
+    const response = await fetch(url, {
       method,
       headers: {
         "Content-Type": "application/json",
@@ -84,7 +118,22 @@ export class $api {
         ...config?.headers,
       },
       body: JSON.stringify(data),
-    }).then(this.handleResponse<T>);
+    });
+
+    // A 401 gets one refresh and one retry, then logs out. Not for login,
+    // sign-up and refresh themselves, or calls that bring their own token.
+    const usesStoredToken =
+      !config?.headers?.Authorization && !url.includes("/auth/");
+    if (response.status === 401 && usesStoredToken && !isRetry) {
+      if (await $api.refreshTokens()) {
+        return $api.handleRequest<T>(url, method, data, config, true);
+      }
+      clearSession();
+    } else if (response.status === 401 && usesStoredToken) {
+      clearSession();
+    }
+
+    return $api.handleResponse<T>(response);
   }
 
   static async get<T>(
@@ -149,6 +198,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase"; // Assuming firebase.ts is in the root
 import { User } from "@/store";
+import { clearSession } from "./session";
 
 /**
  * Fetches data from a Firestore collection.

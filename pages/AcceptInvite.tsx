@@ -18,9 +18,21 @@ const AcceptInvite: React.FC = () => {
   }
 
   if (error) {
+    // Signing up uses up the link, so if joining failed straight after,
+    // signing in is the way to finish
     return (
-      <div className="flex min-h-screen flex-col justify-center items-center bg-background-light p-6 dark:bg-background-dark">
+      <div className="flex min-h-screen flex-col justify-center items-center gap-4 bg-background-light p-6 text-center dark:bg-background-dark">
         <p className="text-red-500">{error}</p>
+        <p className="text-subtext-light dark:text-subtext-dark">
+          Already created your account?{" "}
+          <button
+            type="button"
+            className="font-semibold text-primary underline"
+            onClick={handleSignInRedirect}
+          >
+            Sign in to finish joining
+          </button>
+        </p>
       </div>
     );
   }
