@@ -1,21 +1,9 @@
 import React from "react";
-import { BankSelect } from "../components/BankSelect";
-import { Input } from "../components/Input";
-import { Button } from "../components/Button";
 import { AccountItem } from "../components/accounts/AccountItem";
 import { useAccounts } from "../hooks/useAccounts";
 
 const Accounts: React.FC = () => {
-  const {
-    form,
-    accounts,
-    isResolvingAccount,
-    isFormValid,
-    handleSetDefault,
-    handleBack,
-    handleBankChange,
-    getAccountNumberHelperText,
-  } = useAccounts();
+  const { accounts, handleSetDefault, handleBack } = useAccounts();
 
   return (
     <>
@@ -32,51 +20,15 @@ const Accounts: React.FC = () => {
         </h1>
       </header>
       <main className="p-4 space-y-8">
-        <section className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg space-y-4">
-          <h2 className="text-lg font-bold">Add New Account</h2>
-          <form className="space-y-4" onSubmit={form.handleSubmit}>
-            <BankSelect
-              id="bank-name"
-              name="bankId"
-              label="Bank Name"
-              value={form.values.bankId}
-              onChange={handleBankChange}
-              error={form.errors.bankId}
-              touched={form.touched.bankId}
-            />
-            <Input
-              id="account-number"
-              name="accountNumber"
-              label="Account Number"
-              type="text"
-              placeholder="Enter Account Number"
-              value={form.values.accountNumber}
-              onChange={form.handleChange}
-              onBlur={form.handleBlur}
-              error={form.errors.accountNumber}
-              touched={form.touched.accountNumber}
-              helperText={getAccountNumberHelperText()}
-            />
-            <Input
-              id="account-name"
-              name="accountName"
-              label="Account Name"
-              type="text"
-              placeholder="Autofilled when number is entered"
-              value={form.values.accountName}
-              readonly
-              error={form.errors.accountName}
-              touched={form.touched.accountName}
-            />
-            <Button
-              type="submit"
-              isLoading={form.isSubmitting}
-              disabled={!isFormValid || isResolvingAccount}
-              className="w-full h-12 text-base"
-            >
-              Add Account
-            </Button>
-          </form>
+        {/* The add-account form comes back with the safe bank change flow
+            (M01-06): employer approval and a 24-hour cooling-off. */}
+        <section className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg space-y-2">
+          <h2 className="text-lg font-bold">Change your salary account</h2>
+          <p className="text-subtext-light dark:text-subtext-dark">
+            To change the bank account your salary is paid into, please
+            contact your HR or payroll admin. You'll be able to request this
+            in the app soon.
+          </p>
         </section>
         <section className="space-y-4">
           <h2 className="text-lg font-bold">My Accounts</h2>

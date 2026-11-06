@@ -1,4 +1,5 @@
 import { $api, ApiError } from "@/services/api";
+import { clearSession } from "@/services/session";
 import useStore, { User } from "@/store";
 import { FormikHelpers, useFormik } from "formik";
 import React, { useEffect, useState } from "react";
@@ -182,9 +183,10 @@ export const useSettings = () => {
     fileInputRef.current?.click();
   };
 
-  // Handler for logout
+  // Handler for logout: forget the tokens and the stored user, not just the page
   const handleLogout = () => {
-    navigate("/login");
+    clearSession();
+    navigate("/login", { replace: true });
   };
 
   return {

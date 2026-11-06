@@ -7,6 +7,10 @@ import * as yup from "yup";
 import type { Account } from "@/types";
 import { getFirestoreData } from "@/services/api";
 
+// Off until the safe bank change flow (M01-06). The backend already rejects
+// bank changes from employees (PUT /users/me returns 400).
+const BANK_CHANGES_ENABLED = false;
+
 interface AccountsFormValues {
   bankId: string;
   accountNumber: string;
@@ -44,6 +48,9 @@ export const useAccounts = () => {
     values: AccountsFormValues,
     helpers: FormikHelpers<AccountsFormValues>
   ) => {
+    if (!BANK_CHANGES_ENABLED) {
+      return;
+    }
     helpers.setSubmitting(true);
     try {
       const response = await $api.put<User>("users/me", {
@@ -82,6 +89,7 @@ export const useAccounts = () => {
 
   // Resolve account name on initial load if bankId and accountNumber are present
   useEffect(() => {
+    if (!BANK_CHANGES_ENABLED) return;
     if (
       !hasInitialized &&
       user?.bankId &&
@@ -119,7 +127,7 @@ export const useAccounts = () => {
   // Resolve account when bank and account number are both filled (only after initialization)
   useEffect(() => {
     // Don't run this effect until after initial load is complete
-    if (!hasInitialized) return;
+    if (!BANK_CHANGES_ENABLED || !hasInitialized) return;
 
     const resolveAccount = async () => {
       const { bankId, accountNumber } = form.values;
